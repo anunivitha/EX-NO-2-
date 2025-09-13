@@ -35,9 +35,156 @@ STEP-5: Display the obtained cipher text.
 
 
 Program:
+```
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
+#define SIZE 5
+
+char keyTable[SIZE][SIZE];
+int posRow[26], posCol[26]; 
+
+void generateKeyTable(char key[]) {
+    int i, j, k;
+    int seen[26] = {0};
+    int len = strlen(key);
+    int row = 0, col = 0;
+
+    for (i = 0; i < len; i++) {
+        if (key[i] == 'j') key[i] = 'i';
+        if (!isalpha(key[i])) continue; 
+        key[i] = tolower(key[i]);
+    }
+
+
+    for (i = 0; i < len; i++) {
+        int idx = key[i] - 'a';
+        if (!seen[idx]) {
+            keyTable[row][col] = key[i];
+            posRow[idx] = row;
+            posCol[idx] = col;
+            seen[idx] = 1;
+
+            col++;
+            if (col == SIZE) {
+                col = 0;
+                row++;
+            }
+        }
+    }
+
+ 
+    for (i = 0; i < 26; i++) {
+        if (i + 'a' == 'j') continue; 
+        if (!seen[i]) {
+            keyTable[row][col] = i + 'a';
+            posRow[i] = row;
+            posCol[i] = col;
+            seen[i] = 1;
+
+            col++;
+            if (col == SIZE) {
+                col = 0;
+                row++;
+            }
+        }
+    }
+}
+
+
+int prepareText(char text[], char out[]) {
+    int i, j = 0;
+    int len = strlen(text);
+
+    for (i = 0; i < len; i++) {
+        if (!isalpha(text[i])) continue; 
+        char ch = tolower(text[i]);
+        if (ch == 'j') ch = 'i'; i
+        out[j++] = ch;
+    }
+
+    out[j] = '\0';
+    len = j;
+
+
+    char prepared[200];
+    int k = 0;
+    for (i = 0; i < len; i++) {
+        prepared[k++] = out[i];
+        if (i + 1 < len && out[i] == out[i + 1]) {
+            prepared[k++] = 'x';
+        }
+    }
+    if (k % 2 != 0) {
+        prepared[k++] = 'x'; 
+    }
+    prepared[k] = '\0';
+
+    strcpy(out, prepared);
+    return k;
+}
+
+void encryptDigram(char a, char b, char *c1, char *c2) {
+    int row1 = posRow[a - 'a'], col1 = posCol[a - 'a'];
+    int row2 = posRow[b - 'a'], col2 = posCol[b - 'a'];
+
+    if (row1 == row2) {
+        *c1 = keyTable[row1][(col1 + 1) % SIZE];
+        *c2 = keyTable[row2][(col2 + 1) % SIZE];
+    } else if (col1 == col2) {
+        *c1 = keyTable[(row1 + 1) % SIZE][col1];
+        *c2 = keyTable[(row2 + 1) % SIZE][col2];
+    } else {
+        *c1 = keyTable[row1][col2];
+        *c2 = keyTable[row2][col1];
+    }
+}
+
+void encrypt(char plaintext[], char ciphertext[]) {
+    int len = strlen(plaintext);
+    int i, j = 0;
+    for (i = 0; i < len; i += 2) {
+        char c1, c2;
+        encryptDigram(plaintext[i], plaintext[i + 1], &c1, &c2);
+        ciphertext[j++] = c1;
+        ciphertext[j++] = c2;
+    }
+    ciphertext[j] = '\0';
+}
+
+int main() {
+    char key[100], plaintext[200], prepared[200], ciphertext[200];
+
+    printf("Enter the key: ");
+    fgets(key, sizeof(key), stdin);
+    key[strcspn(key, "\n")] = '\0'; 
+
+    printf("Enter plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    generateKeyTable(key);
+    int len = prepareText(plaintext, prepared);
+    encrypt(prepared, ciphertext);
+
+    printf("\n--- Playfair Cipher ---\n");
+    printf("Key Table:\n");
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%c ", keyTable[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\nPrepared Text: %s\n", prepared);
+    printf("Cipher Text: %s\n", ciphertext);
+
+    return 0;
+}
+```
 
 
 
 
 Output:
+<img width="1537" height="874" alt="Screenshot 2025-09-13 at 2 24 53 PM" src="https://github.com/user-attachments/assets/040f23f5-5af2-4b78-95d9-114d31638670" />
